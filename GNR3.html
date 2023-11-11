@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RGB to HSI Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>RGB to HSI Converter</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <canvas id="resultCanvas" width="500" height="500"></canvas>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const resultCanvas = document.getElementById('resultCanvas');
+    const ctx = resultCanvas.getContext('2d');
+
+    imageInput.addEventListener('change', handleImage);
+
+    function handleImage() {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            drawImage(img);
+          };
+          img.src = e.target.result;
+        };
+
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function drawImage(img) {
+      resultCanvas.width = img.width;
+      resultCanvas.height = img.height;
+      ctx.drawImage(img, 0, 0, img.width, img.height);
+
+      // Process the image directly on the client side (RGB to HSI conversion)
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      const modifiedData = modifyImage(imageData);
+      ctx.putImageData(modifiedData, 0, 0);
+    }
+
+    function modifyImage(imageData) {
+      const pixels = imageData.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        // Perform RGB to HSI conversion
+        const intensity = (r + g + b) / 3;
+        const saturation = 1 - (3 * Math.min(r, g, b)) / (r + g + b + 1e-10);
+        let hue = Math.acos((0.5 * ((r - g) + (r - b))) / Math.sqrt((r - g)**2 + (r - b) * (g - b) + 1e-10));
+
+        // Normalize hue to the range [0, 2π]
+        if (b > g) {
+          hue = 2 * Math.PI - hue;
+        }
+
+        // Modify Hue or Saturation (for example, let's increase saturation)
+        const modifiedSaturation = saturation * 1.5;
+
+        // Update HSI values directly (scaled for display)
+        pixels[i] = (hue / (2 * Math.PI)) * 255;
+        pixels[i + 1] = modifiedSaturation * 255;
+        pixels[i + 2] = intensity;
+      }
+
+      return imageData;
+    }
+  </script>
+</body>
+</html>
